@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1e1b2e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon-512.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+  <title>CyberPet — Ретро-тамагочи</title>
+  <style>
+    :root {
+      --shell: #2c2742;
+      --shell-dark: #1d192c;
+      --lcd-bg: #9bbc0f;
+      --lcd-dark: #0f380f;
+      --lcd-mid: #306230;
+      --lcd-light: #8bac0f;
+      --btn-accent: #ff5e7e;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: radial-gradient(circle at top, #171424, #0b0a12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .device {
+      width: min(92vw, 380px);
+      background: linear-gradient(145deg, var(--shell), var(--shell-dark));
+      border-radius: 44px 44px 64px 64px;
+      padding: 24px 20px 32px;
+      box-shadow:
+        0 24px 50px rgba(0, 0, 0, 0.7),
+        inset 0 3px 6px rgba(255, 255, 255, 0.15),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand {
+      font-size: 13px;
+      letter-spacing: 3px;
+      font-weight: bold;
+      color: #a99fd4;
+      text-transform: uppercase;
+    }
+
+    .bezel {
+      width: 100%;
+      background: #14121d;
+      padding: 14px;
+      border-radius: 20px;
+      box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .lcd {
+      background: var(--lcd-bg);
+      color: var(--lcd-dark);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: inset 0 0 14px rgba(15, 56, 15, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bar {
+      height: 7px;
+      background: var(--lcd-light);
+      border: 1.5px solid var(--lcd-dark);
+      padding: 1px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--lcd-dark);
+      width: 100%;
+      transition: width 0.25s steps(8);
+    }
+
+    canvas {
+      width: 100%;
+      height: 170px;
+      image-rendering: pixelated;
+      border-top: 2px dashed var(--lcd-mid);
+      border-bottom: 2px dashed var(--lcd-mid);
+      display: block;
+    }
+
+    .status-line {
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      min-height: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: bold;
+      opacity: 0.85;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button.hw-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: none;
+      background: radial-gradient(circle at 30% 30%, #ff7a95, var(--btn-accent));
+      box-shadow:
+        0 6px 0 #9e2a42,
+        0 10px 16px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      transition: transform 0.06s, box-shadow 0.06s;
+    }
+
+    button.hw-btn:active {
+      transform: translateY(4px);
+      box-shadow:
+        0 2px 0 #9e2a42,
+        0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-label {
+      font-size: 11px;
+      color: #c7bfe8;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device">
+    <div class="brand">CYBERPET // OS v1.0</div>
+
+    <div class="bezel">
+      <div class="lcd">
+        <div class="stats">
+          <div class="stat-row">
+            <span>ЗАРЯД</span>
+            <div class="bar"><div id="bar-energy" class="bar-fill"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>ЧИСТОТА</span>
+            <div class="bar"><div id="bar-clean" class="bar-fill"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>НАСТРОЕНИЕ</span>
+            <div class="bar"><div id="bar-mood" class="bar-fill"></div></div>
+          </div>
+          <div class="stat-row">
+            <span>СТАБИЛЬНОСТЬ</span>
+            <div class="bar"><div id="bar-health" class="bar-fill"></div></div>
+          </div>
+        </div>
+
+        <canvas id="screen" width="160" height="100"></canvas>
+
+        <div class="status-line" id="msg">Инициализация сектора...</div>
+
+        <div class="meta-row">
+          <span id="stage-label">ФОРМА: ЯЙЦО</span>
+          <span id="age-label">ВОЗРАСТ: 0ч</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="btn-wrap">
+        <button class="hw-btn" id="btn-left" aria-label="Выбор"></button>
+        <span class="btn-label">ВЫБОР</span>
+      </div>
+      <div class="btn-wrap">
+        <button class="hw-btn" id="btn-mid" aria-label="Действие"></button>
+        <span class="btn-label">ОК</span>
+      </div>
+      <div class="btn-wrap">
+        <button class="hw-btn" id="btn-right" aria-label="Сон"></button>
+        <span class="btn-label">СОН</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cyberpet_save_v1';
+    const ACTIONS = ['ПОКОРМИТЬ', 'ОЧИСТИТЬ', 'ИГРАТЬ', 'ПАМЯТЬ'];
+
+    const STAGES = [
+      { name: 'ЯЙЦО', minHours: 0 },
+      { name: 'БАЙТИК', minHours: 1 },
+      { name: 'КИБЕР-КОТ', minHours: 12 },
+      { name: 'ГЛИТЧ-ДРАКОН', minHours: 36 }
+    ];
+
+    const MEMORIES = [
+      'Сектор 01: Внутри яйца теплится слабый импульс.',
+      'Сектор 02: Питомец впервые распознал твоё касание.',
+      'Сектор 03: Обнаружен фрагмент старой 8-битной мелодии.',
+      'Сектор 04: Цифровое ядро полностью стабилизировано!'
+    ];
+
+    let state = {
+      energy: 85,
+      clean: 90,
+      mood: 80,
+      health: 100,
+      sleeping: false,
+      bornAt: Date.now(),
+      lastTick: Date.now(),
+      careScore: 0,
+      glitches: 1
+    };
+
+    let selectedAction = 0;
+    let frame = 0;
+    let miniGame = null;
+    let statusTimeout = null;
+
+    const canvas = document.getElementById('screen');
+    const ctx = canvas.getContext('2d');
+    const DARK = '#0f380f';
+    const MID = '#306230';
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq = 520, duration = 0.06) {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.value = 0.04;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function buzz(ms = 25) {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    }
+
+    function setMessage(text, persist = false) {
+      const el = document.getElementById('msg');
+      el.textContent = text;
+      clearTimeout(statusTimeout);
+      if (!persist) {
+        statusTimeout = setTimeout(() => {
+          el.textContent = state.sleeping
+            ? 'Режим энергосбережения (Zzz)...'
+            : `Меню: [ ${ACTIONS[selectedAction]} ]`;
+        }, 2400);
+      }
+    }
+
+    function clamp(val) {
+      return Math.max(0, Math.min(100, val));
+    }
+
+    function getAgeHours() {
+      return (Date.now() - state.bornAt) / (1000 * 60 * 60);
+    }
+
+    function getStageIndex() {
+      const h = getAgeHours();
+      let idx = 0;
+      STAGES.forEach((s, i) => {
+        if (h >= s.minHours) idx = i;
+      });
+      return idx;
+    }
+
+    function saveState() {
+      state.lastTick = Date.now();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const saved = JSON.parse(raw);
+        state = { ...state, ...saved };
+        const elapsedSec = Math.floor((Date.now() - state.lastTick) / 1000);
+        if (elapsedSec > 10) {
+          applyTimeDelta(elapsedSec);
+          const mins = Math.floor(elapsedSec / 60);
+          if (mins > 0) setMessage(`Прошло ${mins} мин. в офлайне!`);
+        }
+      } catch (e) {}
+    }
+
+    function applyTimeDelta(seconds) {
+      const steps = seconds / 60;
+      if (state.sleeping) {
+        state.energy = clamp(state.energy + steps * 0.8);
+        state.clean = clamp(state.clean - steps * 0.15);
+      } else {
+        state.energy = clamp(state.energy - steps * 0.45);
+        state.clean = clamp(state.clean - steps * 0.35);
+        state.mood = clamp(state.mood - steps * 0.4);
+      }
+
+      if (state.clean < 50 && Math.random() < 0.3) {
+        state.glitches = Math.min(5, state.glitches + 1);
+      }
+
+      if (state.energy < 20 || state.clean < 20 || state.mood < 20) {
+        state.health = clamp(state.health - steps * 0.5);
+      } else {
+        state.health = clamp(state.health + steps * 0.2);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById('bar-energy').style.width = state.energy + '%';
+      document.getElementById('bar-clean').style.width = state.clean + '%';
+      document.getElementById('bar-mood').style.width = state.mood + '%';
